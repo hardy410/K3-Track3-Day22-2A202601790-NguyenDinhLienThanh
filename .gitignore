@@ -6,6 +6,8 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 outputs/
+data/pilot_vi_preferences.jsonl
+data/colab_preferences.jsonl
 wandb/
 *.safetensors
 *.bin

@@ -18,12 +18,15 @@ def test_colab_notebook_has_gpu_metadata_and_ordered_cells() -> None:
     assert notebook["nbformat"] == 4
     assert notebook["metadata"]["accelerator"] == "GPU"
     assert notebook["metadata"]["colab"]["gpuType"] == "A100"
-    assert len(notebook["cells"]) == 10
+    assert len(notebook["cells"]) == 11
 
     notebook_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
     assert "userdata.get('HF_TOKEN')" in notebook_source
     assert "userdata.get('XAH_API_KEY')" in notebook_source
     assert "pip_check.returncode" in notebook_source
+    assert "scripts/generate_vi_pilot.py" in notebook_source
+    assert "--count', '10'" in notebook_source
+    assert "PILOT_REVIEW_APPROVED = False" in notebook_source
     assert "'uninstall', '-y', 'torchao'" in notebook_source
     assert "subprocess.Popen" in notebook_source
     assert "stderr=subprocess.STDOUT" in notebook_source
