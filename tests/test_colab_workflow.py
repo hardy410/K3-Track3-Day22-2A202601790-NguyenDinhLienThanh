@@ -23,6 +23,9 @@ def test_colab_notebook_has_gpu_metadata_and_ordered_cells() -> None:
     notebook_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
     assert "userdata.get('HF_TOKEN')" in notebook_source
     assert "userdata.get('XAH_API_KEY')" in notebook_source
+    assert "pip_check.returncode" in notebook_source
+    assert "files.download(zip_path)" in notebook_source
+    assert "tqdm>=4.66,<5" in notebook_source
     assert re.search(r"hf_[A-Za-z0-9]{20,}", notebook_source) is None
     assert re.search(r"sk-[A-Za-z0-9]{20,}", notebook_source) is None
 

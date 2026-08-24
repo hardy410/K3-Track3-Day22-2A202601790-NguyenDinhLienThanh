@@ -114,6 +114,7 @@ def score_responses(
     *,
     batch_size: int,
     max_length: int,
+    description: str,
 ) -> list[float]:
     """Return mean response-token log probabilities in deterministic batches."""
     import torch
@@ -130,7 +131,14 @@ def score_responses(
 
     scores: list[float] = []
     model.eval()
-    for start in range(0, len(full_texts), batch_size):
+    from tqdm.auto import tqdm
+
+    for start in tqdm(
+        range(0, len(full_texts), batch_size),
+        desc=description,
+        unit="batch",
+        leave=False,
+    ):
         stop = start + batch_size
         texts = full_texts[start:stop]
         lengths = prompt_lengths[start:stop]
@@ -184,6 +192,7 @@ def evaluate_pairs(
         [example.chosen for example in examples],
         batch_size=batch_size,
         max_length=max_length,
+        description="Scoring chosen responses",
     )
     rejected_scores = score_responses(
         model,
@@ -192,6 +201,7 @@ def evaluate_pairs(
         [example.rejected for example in examples],
         batch_size=batch_size,
         max_length=max_length,
+        description="Scoring rejected responses",
     )
     margins = [chosen - rejected for chosen, rejected in zip(chosen_scores, rejected_scores)]
     return {
