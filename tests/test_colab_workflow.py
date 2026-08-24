@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from scripts.train_dpo_colab import (
@@ -17,7 +18,13 @@ def test_colab_notebook_has_gpu_metadata_and_ordered_cells() -> None:
     assert notebook["nbformat"] == 4
     assert notebook["metadata"]["accelerator"] == "GPU"
     assert notebook["metadata"]["colab"]["gpuType"] == "A100"
-    assert len(notebook["cells"]) == 9
+    assert len(notebook["cells"]) == 10
+
+    notebook_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "userdata.get('HF_TOKEN')" in notebook_source
+    assert "userdata.get('XAH_API_KEY')" in notebook_source
+    assert re.search(r"hf_[A-Za-z0-9]{20,}", notebook_source) is None
+    assert re.search(r"sk-[A-Za-z0-9]{20,}", notebook_source) is None
 
 
 def test_preference_example_is_converted_to_conversational_format() -> None:

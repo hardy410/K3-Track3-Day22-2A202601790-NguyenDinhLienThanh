@@ -34,10 +34,13 @@ def generate(
     focus: str = "technical accuracy and safety",
     output_file: Path = Path("data/synthetic_preferences.jsonl"),
     seed_file: Path = Path("data/sample_preferences.jsonl"),
-    model: str = "gpt-4o",
+    model: str = os.getenv("OPENAI_MODEL", "gpt-4o"),
 ) -> None:
     """Generate synthetic preference pairs using OpenAI."""
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        base_url=os.getenv("OPENAI_BASE_URL"),
+    )
 
     if not os.getenv("OPENAI_API_KEY"):
         print("[red]Error: OPENAI_API_KEY environment variable not set.[/red]")
