@@ -24,6 +24,7 @@ def test_colab_notebook_has_gpu_metadata_and_ordered_cells() -> None:
     assert "userdata.get('HF_TOKEN')" in notebook_source
     assert "userdata.get('XAH_API_KEY')" in notebook_source
     assert "pip_check.returncode" in notebook_source
+    assert "'uninstall', '-y', 'torchao'" in notebook_source
     assert "subprocess.Popen" in notebook_source
     assert "stderr=subprocess.STDOUT" in notebook_source
     assert "'-u'" in notebook_source
