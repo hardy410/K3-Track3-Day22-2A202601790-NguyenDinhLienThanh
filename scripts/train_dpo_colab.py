@@ -5,6 +5,7 @@ import inspect
 import json
 import platform
 import time
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -282,9 +283,12 @@ def run(config_path: Path) -> Path:
     from trl import DPOConfig, DPOTrainer
 
     started_at = time.perf_counter()
+    print(f"[1/8] Loading configuration: {config_path}", flush=True)
     config = load_yaml(config_path)
     gpu = verify_gpu(config["runtime"])
+    print(f"[2/8] GPU verified: {gpu['name']} ({gpu['vram_gb']} GiB)", flush=True)
     validate_trl_api()
+    print("[3/8] TRL API compatibility verified", flush=True)
     torch.manual_seed(int(config["seed"]))
     torch.cuda.manual_seed_all(int(config["seed"]))
     torch.backends.cuda.matmul.allow_tf32 = bool(config["training"]["tf32"])
@@ -295,6 +299,7 @@ def run(config_path: Path) -> Path:
     adapter_dir = Path(config["paths"]["adapter_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    print(f"[4/8] Loading tokenizer and model: {config['model']['name_or_path']}", flush=True)
     tokenizer = AutoTokenizer.from_pretrained(
         config["model"]["name_or_path"],
         trust_remote_code=bool(config["model"]["trust_remote_code"]),
@@ -316,8 +321,13 @@ def run(config_path: Path) -> Path:
     model.config.use_cache = bool(config["model"]["use_cache"])
 
     train_dataset, validation_dataset, validation_examples = build_datasets(config)
+    print(
+        f"[5/8] Dataset ready: {len(train_dataset)} train / {len(validation_dataset)} validation",
+        flush=True,
+    )
     regression_prompts = load_regression_prompts(config["evaluation"]["regression_prompts"])
 
+    print("[6/8] Running baseline evaluation", flush=True)
     baseline_metrics = evaluate_pairs(model, tokenizer, validation_examples, config)
     baseline_regression = generate_regression_outputs(model, tokenizer, regression_prompts, config)
 
@@ -393,6 +403,7 @@ def run(config_path: Path) -> Path:
         peft_config=lora_config,
         callbacks=[WallClockLimitCallback()],
     )
+    print("[7/8] Starting LoRA DPO training", flush=True)
     train_result = trainer.train()
     trainer.save_model(str(adapter_dir))
     tokenizer.save_pretrained(adapter_dir)
@@ -437,6 +448,7 @@ def run(config_path: Path) -> Path:
         json.dumps(json_safe(metrics), indent=2, ensure_ascii=False, sort_keys=True),
         encoding="utf-8",
     )
+    print("[8/8] Training and post-evaluation completed", flush=True)
     print(json.dumps(json_safe(metrics), indent=2, ensure_ascii=False))
     print(f"Saved adapter to {adapter_dir}")
     print(f"Saved metrics to {metrics_path}")
@@ -444,4 +456,9 @@ def run(config_path: Path) -> Path:
 
 
 if __name__ == "__main__":
-    run(parse_args().config)
+    try:
+        run(parse_args().config)
+    except Exception:  # noqa: BLE001 - CLI boundary must surface third-party failures
+        print("\nDPO WORKFLOW FAILED — full traceback follows:", flush=True)
+        traceback.print_exc()
+        raise SystemExit(1)
