@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import json
 import os
 from pathlib import Path
+
 import typer
-from rich import print
 from openai import OpenAI
+from rich import print
 
 app = typer.Typer(help="Synthetic Data Generation for Preference Alignment")
 
@@ -24,6 +26,7 @@ Use the following examples as a style guide:
 
 Focus on: {focus}"""
 
+
 @app.command()
 def generate(
     count: int = 5,
@@ -35,7 +38,7 @@ def generate(
 ) -> None:
     """Generate synthetic preference pairs using OpenAI."""
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
+
     if not os.getenv("OPENAI_API_KEY"):
         print("[red]Error: OPENAI_API_KEY environment variable not set.[/red]")
         raise typer.Exit(1)
@@ -48,14 +51,17 @@ def generate(
             examples_str = "\n".join(lines)
 
     print(f"Generating [blue]{count}[/blue] pairs for domain: [green]{domain}[/green]...")
-    
+
     response = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": USER_PROMPT_TEMPLATE.format(
-                count=count, domain=domain, examples=examples_str, focus=focus
-            )}
+            {
+                "role": "user",
+                "content": USER_PROMPT_TEMPLATE.format(
+                    count=count, domain=domain, examples=examples_str, focus=focus
+                ),
+            },
         ],
         temperature=0.7,
     )
@@ -86,6 +92,7 @@ def generate(
             f.write(line + "\n")
 
     print(f"[green]Successfully added {len(valid_lines)} pairs to {output_file}[/green]")
+
 
 if __name__ == "__main__":
     app()
